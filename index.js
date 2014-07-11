@@ -1,4 +1,7 @@
 var rolodex = require("rolodex");
+var uuid    = require("uuid");
+var _       = require("lodash");
+var Emitter = require("events").EventEmitter;
 
 // config options:
 // - send verification email
@@ -7,31 +10,62 @@ var rolodex = require("rolodex");
 // - session expiry
 // - email on password change
 // - redis options
+// - identifier (default: username)
 
 // Terminology:
 
 // token: Temporary id associated with the user. It gets randomly generated on every login. It expires if there's a time in the config. It gets deleted on logout. It's required to make calls that affect the owner of the token.
 
-
 var Doorkeeper = function (options) {
-  
+  this.rolodex = rolodex(options.rolodex);
+  this.events = new Emitter();
+  this.on = this.events.on;
+  this.emit = this.events.emit;
 }
 
 Doorkeeper.prototype.user = {
 
+  // verifies that fields match
+  // assigns session variables
+  // executes callback with error boolean
+  // cb(errors, token, account)
   login: function (username, password, cb) {
-    // verifies that fields match
-    // assigns session variables
-    // executes callback with error boolean
-    // cb(errors, token);
+    this.rolodex.validate({ username: username }, password, function (errors, account) {
+      if (errors) {
+        this.events.emit("login_error", errors);
+        cb(errors, null, null);
+      } else {
+        this.rolodex.set({ username: username }, { token: token }, function (errors, account) {
+          var token = uuid.v4();
+          if (errors) {
+            this.events.emit("login_error", errors);
+            cb(errors, null, null);
+          } else {
+            this.events.emit("login_success", token, account);
+            cb(null, token, account);
+          }
+        });
+      }
+    });
   },
 
+  // creates a new record with the data passed
+  // sends a verification email to the user if config true
+  // if not send a welcome email
+  // cb gets passed an error (null|object) and the user object if there were no errors.
+  // cb(errors, user)
   signup: function (username, password, userData, cb) {
-    // creates a new record with the data passed
-    // sends a verification email to the user if config true
-    // if not send a welcome email
-    // cb gets passed an error (null|object) and the user object if there were no errors.
-    // cb(errors, user)
+    var data = userData, self = this;
+    data.username = username;
+    data.password = password;
+    this.rolodex.set(data, function (errors, account) {
+      if (errors) {
+        cb(errors, null);
+      } else {
+        // self.email(account.email, )
+        cb(null, account);
+      }
+    });
   },
 
   logout: function (token, cb) {
@@ -83,3 +117,5 @@ Doorkeeper.prototype.user = {
 // dk.user.logout()
 
 // dk.user.update()
+
+module.exports = Doorkeeper;
