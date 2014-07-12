@@ -1,12 +1,9 @@
 var app     = require("../index");
 var should  = require("should");
-var Doorkeeper = require("../index");
+var dk      = require("../index")({ rolodex: { role: "master" } });
+var mockUsers   = require("./mock/users");
 
-var dk = new Doorkeeper({
-  rolodex: {
-    role: "master"
-  }
-});
+var validUser   = mockUsers.valid;
 
 describe("Doorkeeper", function () {
   
@@ -26,6 +23,26 @@ describe("Doorkeeper", function () {
       dk.user.should.have.property("login");
       done();
     });
+
+    it("should create user", function (done) {
+      dk.user.signup(validUser, function (errors, account) {
+        should.not.exist(errors);
+        account.should.be.ok;
+        account.should.have.property("username", validUser.username);
+        account.should.have.property("email", validUser.email);
+        account.should.have.property("city", validUser.city);
+        done();
+      });
+    });
+
+    it("should login user", function (done) {
+      dk.user.login(validUser.username, validUser.password, function (errors, account) {
+        should.not.exist(errors);
+        account.should.be.ok;
+        console.log("ACC: ", account);
+        done()
+      });
+    })
   });
   
   describe("events", function () {
