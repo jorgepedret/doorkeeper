@@ -48,10 +48,27 @@ describe("Doorkeeper", function () {
       });
     });
 
+    it("should logout user", function (done) {
+      dk.logout(loginToken, function (errors) {
+        should.not.exist(errors);
+        dk.login(loginToken, function (errors, token, account) {
+          should.exist(errors);
+          errors.should.have.property("messages");
+          errors.messages[0].should.eql("token is not valid");
+          done();
+        });
+      });
+    });
+
     it("should remove user", function (done) {
       dk.destroy({ email: validUser.email }, function (errors) {
         should.not.exist(errors);
-        done();
+        dk.login({ email: validUser.email }, validUser.password, function (errors, token, account) {
+          should.exist(errors);
+          errors.should.have.property("messages");
+          errors.messages[0].should.eql("account is not in the system");
+          done();
+        })
       });
     });
   });

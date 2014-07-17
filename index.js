@@ -88,8 +88,19 @@ Doorkeeper.prototype.signup = function (userData, cb) {
 
 // resets the session variables
 // cb(errors)
-Doorkeeper.prototype.logout = function () {
-    
+Doorkeeper.prototype.logout = function (token, cb) {
+  var client = this.rolodex.account.locals.client;
+  this.rolodex.account.authenticate(token, function (errors, account) {
+    if (errors) {
+      cb(errors);
+    } else {
+      client.multi()
+        .del("token:" + token)
+        .exec(function(err, replies){
+          cb(err);
+        });
+    }
+  });
 };
 
 // updates the user data basend on the token
