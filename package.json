@@ -18,7 +18,8 @@
   "homepage": "https://github.com/jorgepedret/doorkeeper",
   "dependencies": {
     "rolodex": "git+ssh://git@github.com:sintaxi/rolodex.git#v0.9.2",
-    "uuid": "~1.4.1"
+    "uuid": "~1.4.1",
+    "debug": "~1.0.4"
   },
   "devDependencies": {
     "mocha": "~1.20.1",
