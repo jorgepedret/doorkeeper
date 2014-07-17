@@ -48,7 +48,25 @@ describe("Doorkeeper", function () {
       });
     });
 
-    it("should logout user", function (done) {
+    it("should update user data", function (done) {
+      done();
+    });
+
+    it("should change user’s password", function (done) {
+      dk.changePassword(loginToken, validUser.password, validUser.new_password, function (errors, account) {
+        should.not.exist(errors);
+        dk.login({ email: validUser.email }, validUser.password, function (errors, token, account) {
+          should.exist(errors);
+          dk.login({ email: validUser.email }, validUser.new_password, function (errors, token, account) {
+            should.not.exist(errors);
+            loginToken = token;
+            done();
+          });
+        });
+      });
+    });
+
+    it("should logout user (expire token)", function (done) {
       dk.logout(loginToken, function (errors) {
         should.not.exist(errors);
         dk.login(loginToken, function (errors, token, account) {

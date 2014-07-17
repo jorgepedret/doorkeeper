@@ -105,15 +105,32 @@ Doorkeeper.prototype.logout = function (token, cb) {
 
 // updates the user data basend on the token
 // cb(errors, user)
-Doorkeeper.prototype.update = function () {
-    
+Doorkeeper.prototype.update = function (token, userData, cb) {
+  this.rolodex.account.set(token, userData, function (errors, account) {
+    cb(errors, account);
+  });
 };
 
 // if token and oldPassword match, the change password for newPassword
 // Email user if config true
 // cb(errors, user);
-Doorkeeper.prototype.changePassword = function () {
-    
+Doorkeeper.prototype.changePassword = function (token, oldPassword, newPassword, cb) {
+  var auth = this.rolodex.account.authenticate, self = this;
+  auth(token, function (errors, account) {
+    if (errors) {
+      cb(errors, null);
+    } else {
+      auth({ email: account.email }, oldPassword, function (errors, account) {
+        if (errors) {
+          cb(errors, null);
+        } else {
+          self.rolodex.account.set(account, { password: newPassword, password_confirmation: newPassword }, function (errors, account) {
+            cb(errors, account);
+          });
+        }
+      });
+    }
+  });
 };
 
 // *identifier can be email or username
