@@ -1,9 +1,9 @@
-var app     = require("../index");
 var should  = require("should");
 var dk      = require("../index")({ rolodex: { role: "master" } });
 var mockUsers   = require("./mock/users");
 
 var validUser   = mockUsers.valid;
+var loginToken = null;
 
 describe("Doorkeeper", function () {
   
@@ -12,37 +12,48 @@ describe("Doorkeeper", function () {
       dk.should.be.ok;
       dk.should.be.instanceOf(Object);
       dk.should.have.property("rolodex");
-      dk.should.have.property("user");
+      dk.should.have.property("login");
+      dk.should.have.property("signup");
       done();
     });
   });
 
   describe("user", function () {
-    it("should have properties", function (done) {
-      dk.user.should.be.ok;
-      dk.user.should.have.property("login");
-      done();
-    });
-
     it("should create user", function (done) {
-      dk.user.signup(validUser, function (errors, account) {
+      dk.signup(validUser, function (errors, account) {
         should.not.exist(errors);
         account.should.be.ok;
-        account.should.have.property("username", validUser.username);
         account.should.have.property("email", validUser.email);
-        account.should.have.property("city", validUser.city);
+        // NOTE: It would be nice to support custom fields
+        // account.should.have.property("city", validUser.city);
         done();
       });
     });
 
     it("should login user", function (done) {
-      dk.user.login(validUser.username, validUser.password, function (errors, account) {
+      dk.login({ email: validUser.email }, validUser.password, function (errors, token, account) {
         should.not.exist(errors);
         account.should.be.ok;
-        console.log("ACC: ", account);
-        done()
+        account.should.have.property("email", validUser.email);
+        loginToken = token;
+        done();
       });
-    })
+    });
+
+    it("should login user using token", function (done) {
+      dk.login(loginToken, function (errors, token, account) {
+        should.not.exist(errors);
+        account.should.be.ok;
+        done();
+      });
+    });
+
+    it("should remove user", function (done) {
+      dk.destroy({ email: validUser.email }, function (errors) {
+        should.not.exist(errors);
+        done();
+      });
+    });
   });
   
   describe("events", function () {
