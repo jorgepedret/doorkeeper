@@ -1,8 +1,10 @@
 var should  = require("should");
 var dk      = require("../index")({ rolodex: { role: "master" } });
 var mockUsers   = require("./mock/users");
+var mockEmails   = require("./mock/emails");
 
 var validUser   = mockUsers.valid;
+var validEmail   = mockEmails.valid;
 var loginToken = null;
 
 describe("Doorkeeper", function () {
@@ -111,6 +113,15 @@ describe("Doorkeeper", function () {
             done();
           });
         });
+      });
+    });
+
+    it("should email user", function (done) {
+      dk.email({ email: validUser.email }, validEmail, function (errors, message) {
+        should.not.exist(errors);
+        should.exist(message);
+        message.should.have.property("to", validUser.email);
+        done();
       });
     });
 

@@ -24,6 +24,7 @@ var Doorkeeper = function (options) {
 Doorkeeper.prototype.init = function () {
   debug("init()");
   this.rolodex = rolodex(this.options.rolodex||{role:"master"});
+  this.email = this.rolodex.account.email;
 };
 
 // verifies that fields match
@@ -206,10 +207,6 @@ Doorkeeper.prototype.destroy = function (identifier, cb) {
   self.rolodex.account.del(identifier, function (errors) {
     cb(errors);
   });
-};
-
-Doorkeeper.prototype.email = function () {
-  
 };
 
 module.exports = function (options) {
