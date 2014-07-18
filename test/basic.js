@@ -18,6 +18,25 @@ describe("Doorkeeper", function () {
     });
   });
 
+  describe("events", function () {
+    
+    it("should trigger event", function (done) {
+      dk.on("doh", function () {
+        done();
+      });
+      dk.emit("doh");
+    });
+
+    it("should trigger event with arguments", function (done) {
+      dk.on("foo", function (arg1) {
+        arg1.should.eql("blah");
+        done();
+      });
+      
+      dk.emit("foo", "blah");
+    });
+  });
+
   describe("user", function () {
     it("should create user", function (done) {
       dk.signup(validUser, function (errors, account) {
@@ -78,6 +97,23 @@ describe("Doorkeeper", function () {
       });
     });
 
+    it("should reset user’s password", function (done) {
+      // Generate reset password token
+      dk.resetPassword({ email: "jorge@chloi.io" }, function (errors, resetToken, account) {
+        should.not.exist(errors);
+        should.exist(account);
+        // Use the generated reset password token to reset the account password
+        dk.resetPasswordConfirm({ email: validUser.email }, resetToken, validUser.password, function (errors, account) {
+          should.not.exist(errors);
+          // Test the new password by loging in
+          dk.login({ email: validUser.email }, validUser.password, function (errors, token, account) {
+            should.not.exist(errors);
+            done();
+          });
+        });
+      });
+    });
+
     it("should remove user", function (done) {
       dk.destroy({ email: validUser.email }, function (errors) {
         should.not.exist(errors);
@@ -88,25 +124,6 @@ describe("Doorkeeper", function () {
           done();
         })
       });
-    });
-  });
-  
-  describe("events", function () {
-    
-    it("should trigger event", function (done) {
-      dk.on("doh", function () {
-        done();
-      });
-      dk.emit("doh");
-    });
-
-    it("should trigger event with arguments", function (done) {
-      dk.on("foo", function (arg1) {
-        arg1.should.eql("blah");
-        done();
-      });
-      
-      dk.emit("foo", "blah");
     });
   });
 });

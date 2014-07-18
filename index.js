@@ -10,7 +10,7 @@ var debug   = require("debug")("Doorkeeper");
 // - session expiry
 // - email on password change
 // - redis options
-// - identifier (default: username)
+// - identifier (default: email)
 
 // Constructor
 var Doorkeeper = function (options) {
@@ -96,7 +96,7 @@ Doorkeeper.prototype.logout = function (token, cb) {
     } else {
       client.multi()
         .del("token:" + token)
-        .exec(function(err, replies){
+        .exec(function (err, replies) {
           cb(err);
         });
     }
@@ -133,20 +133,70 @@ Doorkeeper.prototype.changePassword = function (token, oldPassword, newPassword,
   });
 };
 
-// *identifier can be email or username
+// *identifier = { email: "jorge@sample.com" }
 // if identifier can be matched to a user then
 // generate resetToken associated with the user
 // send reset password email to user with resetToken
 // cb(errors)
-Doorkeeper.prototype.resetPassword = function () {
-
+Doorkeeper.prototype.resetPassword = function (identifier, cb) {
+  var client = this.rolodex.account.locals.client;
+  this.rolodex.account.get(identifier, function (account) {
+    var resetToken = exp = null, error;
+    if (!account) {
+      error = {
+        details: {"account": "is not in the system"},
+        messages: ["account is not in the system"]
+      }
+      cb(error);
+    } else {
+      resetToken = uuid.v4();
+      exp = 60 * 60 * 24; // TODO: Move `exp` to a configuration variable
+      client.multi()
+      .set("resetToken:" + resetToken, account.id)
+      .expire("resetToken:" + resetToken, exp)
+      .exec(function (errors, replies) {
+        if (errors) {
+          cb(errors, null, null);
+        } else {
+          cb(null, resetToken, account);
+        }
+      });
+    }
+  });
 };
 
 // if identifier and resetToken match
 // update password field with newPassword
 // cb(errors, user)
-Doorkeeper.prototype.resetPasswordConfirm = function () {
-    
+Doorkeeper.prototype.resetPasswordConfirm = function (identifier, resetToken, newPassword, cb) {
+  var auth = this.rolodex.account.authenticate,
+      client = this.rolodex.account.locals.client,
+      self = this;
+  self.rolodex.account.get(identifier, function (account) {
+    if (!account) {
+      cb({
+        details: {"account": "is not in the system"},
+        messages: ["account is not in the system"]
+      }, null);
+    } else {
+      client.get("resetToken:" + resetToken, function (errors, account_id) {
+        if (errors) {
+          cb(errors, null);
+        } else {
+          if (account_id !== account.id) {
+            cb({
+              details: {"account": "is not in the system"},
+              messages: ["account is not in the system"]
+            }, null);
+          } else {
+            self.rolodex.account.set(account, { password: newPassword, password_confirmation: newPassword }, function (errors, account) {
+              cb(errors, account);
+            });
+          }
+        }
+      });
+    }
+  });
 };
 
 // removes the user completely
